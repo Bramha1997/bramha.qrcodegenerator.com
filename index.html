@@ -11,16 +11,16 @@
         }
 
         #qrcode {
-			position: relative;
-			display: inline-block;
-			max-width: 100%; /* Prevents the QR code from exceeding the width of the container */
-			max-height: 90vh; /* Limits the QR code height to 90% of the viewport height */
-			overflow: auto; /* Adds scrollbars when content exceeds the container */
-			margin: 10px 0; /* Adds margin for better spacing */
-		}
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            margin: 10px 0;
+        }
 
         #downloadBtn {
-            display: none; /* Hidden by default */
+            display: none;
             margin-top: 20px;
         }
 
@@ -73,7 +73,6 @@
             gap: 10px;
         }
 
-        /* From Uiverse.io by shadowmurphy */
         .input {
             border: 2px solid transparent;
             width: 15em;
@@ -121,6 +120,19 @@
     <input class="input" type="file" id="logoFile" accept="image/*">
     <br><br>
 
+    <label for="fileFormat">Select File Format:</label>
+    <select class="input" id="fileFormat">
+        <option value="png">PNG</option>
+        <option value="jpg">JPG</option>
+        <option value="jpeg">JPEG</option>
+        <option value="svg">SVG</option>
+    </select>
+    <br><br>
+
+    <label for="fileName">Enter Filename:</label>
+    <input class="input" type="text" id="fileName" placeholder="Enter filename (without extension)">
+    <br><br>
+
     <button class="cssbuttons-io-button" onclick="generateQRCode()">Generate QR Code</button>
 
     <!-- QR Code Display -->
@@ -132,122 +144,127 @@
 
 <script>
 function generateQRCode() {
-// Get user inputs
-const text = document.getElementById("qrText").value;
-const size = parseInt(document.getElementById("qrSize").value);
-const colorDark = document.getElementById("darkColor").value;
-const colorLight = document.getElementById("lightColor").value;
-const logoFile = document.getElementById("logoFile").files[0];
-const borderColor = colorLight;
+    // Get user inputs
+    const text = document.getElementById("qrText").value;
+    const size = parseInt(document.getElementById("qrSize").value);
+    const colorDark = document.getElementById("darkColor").value;
+    const colorLight = document.getElementById("lightColor").value;
+    const logoFile = document.getElementById("logoFile").files[0];
+    const borderColor = colorLight;
+    const fileFormat = document.getElementById("fileFormat").value; 
+    const fileName = document.getElementById("fileName").value || 'qrcode'; // Get filename input, default to 'qrcode'
 
-const qrCodeElement = document.getElementById("qrcode");
-qrCodeElement.innerHTML = ""; // Clear previous QR code if any
+    const qrCodeElement = document.getElementById("qrcode");
+    qrCodeElement.innerHTML = ""; // Clear previous QR code if any
 
-// Generate the QR code as a Data URL
-QRCode.toDataURL(text, {
-  color: {
-    dark: colorDark, // Color of the QR code (foreground)
-    light: colorLight // Background color of the QR code
-  },
-  width: size,
-  height: size,
-  margin: 2, // Remove default margin around QR code
-  type: 'image/png', // Ensure PNG image type
-  rendererOpts: {
-    // Custom QR rendering options to make the modules and eyes circular
-    fill: colorDark,
-    background: colorLight,
-    radius: 0.5, // This makes the modules rounded by applying a circular radius
-    quietZone: 4 // Adjust quiet zone around the QR code
-  }
-}, function (err, url) {
-  if (err) {
-    console.error("Error generating QR code:", err);
-    return;
-  }
+    if (fileFormat === 'svg') {
+        QRCode.toString(text, {
+            color: {
+                dark: colorDark,
+                light: colorLight
+            },
+            type: 'svg',
+            width: size,
+            height: size,
+            margin: 2,
+        }, function (err, svg) {
+            if (err) {
+                console.error("Error generating SVG QR code:", err);
+                return;
+            }
 
-  // Create an image element to display the QR code
-  const img = document.createElement("img");
-  img.src = url;
-  qrCodeElement.appendChild(img);
+            const img = document.createElement("div");
+            img.innerHTML = svg;
+            qrCodeElement.appendChild(img);
 
-  // Add logo if provided
-  if (logoFile) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var logoImg = new Image();
-      logoImg.src = e.target.result;
-      logoImg.onload = function() {
-        // Calculate logo size and positioning
-        const logoSize = size / 5; // Resize logo relative to QR code size
-        const logoPadding = 5; // Space between logo and QR code
+            const downloadBtn = document.getElementById("downloadBtn");
+            downloadBtn.style.display = "inline";
+            downloadBtn.onclick = function () {
+                const link = document.createElement('a');
+                link.href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+                link.download = fileName + '.svg'; // Use the filename input here
+                link.click();
+            };
+        });
+    } else {
+        QRCode.toDataURL(text, {
+            color: {
+                dark: colorDark,
+                light: colorLight
+            },
+            type: 'image/' + fileFormat,
+            width: size,
+            height: size,
+            margin: 2,
+        }, function (err, url) {
+            if (err) {
+                console.error("Error generating QR code:", err);
+                return;
+            }
 
-        // Calculate the center of the QR code
-        const centerX = size / 2;
-        const centerY = size / 2;
+            const img = document.createElement("img");
+            img.src = url;
+            qrCodeElement.appendChild(img);
 
-        // Position the logo exactly at the center
-        const paddedX = centerX - logoSize / 2; // Center the logo horizontally
-        const paddedY = centerY - logoSize / 2; // Center the logo vertically
+            if (logoFile) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var logoImg = new Image();
+                    logoImg.src = e.target.result;
+                    logoImg.onload = function () {
+                        const logoSize = size / 5;
+                        const logoPadding = 5;
 
-        // Calculate the border size around the logo (slightly larger than the logo size)
-        const borderSize = logoSize + logoPadding * 2;
+                        const canvas = document.createElement("canvas");
+                        const ctx = canvas.getContext("2d");
+                        canvas.width = size;
+                        canvas.height = size;
 
-        // Create a canvas to draw the QR code and logo
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = size;
-        canvas.height = size;
+                        ctx.drawImage(img, 0, 0, size, size);
 
-        // Draw the QR code image on the canvas
-        ctx.drawImage(img, 0, 0, size, size);
+                        const centerX = size / 2;
+                        const centerY = size / 2;
+                        const radius = logoSize / 2 + logoPadding;
+                        ctx.fillStyle = borderColor;
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+                        ctx.fill();
 
-        // Draw the round border around the logo
-        const radius = borderSize / 2;
-        ctx.fillStyle = borderColor;
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false); // Draw the circle
-        ctx.fill(); // Fill the circle with the border color
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius - logoPadding, 0, Math.PI * 2, false);
+                        ctx.clip();
 
-        // Clip the canvas to the circular area
-        ctx.save(); // Save the current canvas state
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, radius - logoPadding, 0, Math.PI * 2, false);
-        ctx.clip(); // Clip the canvas to the circular region
+                        ctx.drawImage(logoImg, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
 
-        // Draw the logo inside the circle at the center
-        ctx.drawImage(logoImg, paddedX, paddedY, logoSize, logoSize); // Draw logo inside the circle
+                        ctx.restore();
 
-        ctx.restore(); // Restore the canvas state to stop clipping
+                        const dataUrl = canvas.toDataURL('image/' + fileFormat);
+                        img.src = dataUrl;
 
-        // Convert canvas to image URL and display it
-        const dataUrl = canvas.toDataURL();
-        img.src = dataUrl; // Update img element to show the canvas with QR code and logo
-
-        // Update download button with the new canvas data URL
-        const downloadBtn = document.getElementById("downloadBtn");
-        downloadBtn.style.display = "inline"; // Make the download button visible
-        downloadBtn.onclick = function() {
-          const link = document.createElement('a');
-          link.href = dataUrl; // Link the canvas data URL to the download
-          link.download = 'qrcode_with_round_logo.png'; // Set default file name for download
-          link.click(); // Trigger the download
-        };
-      };
-    };
-    reader.readAsDataURL(logoFile);
-  } else {
-    // If no logo, set up the download for the base QR code
-    const downloadBtn = document.getElementById("downloadBtn");
-    downloadBtn.style.display = "inline";
-    downloadBtn.onclick = function() {
-      const link = document.createElement('a');
-      link.href = url; // Use the QR code URL for download
-      link.download = 'qrcode.png';
-      link.click();
-    };
-  }
-});
+                        const downloadBtn = document.getElementById("downloadBtn");
+                        downloadBtn.style.display = "inline";
+                        downloadBtn.onclick = function () {
+                            const link = document.createElement('a');
+                            link.href = dataUrl;
+                            link.download = fileName + '.' + fileFormat; // Use the filename input here
+                            link.click();
+                        };
+                    };
+                };
+                reader.readAsDataURL(logoFile);
+            } else {
+                const downloadBtn = document.getElementById("downloadBtn");
+                downloadBtn.style.display = "inline";
+                downloadBtn.onclick = function () {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName + '.' + fileFormat; // Use the filename input here
+                    link.click();
+                };
+            }
+        });
+    }
 }
 </script>
 
