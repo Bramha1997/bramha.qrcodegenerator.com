@@ -92,7 +92,85 @@
             background-color: white;
         }
 
-        /* Footer Style */
+        /* Custom file input styling */
+        .file-input-container {
+            position: relative;
+            display: inline-block;
+            width: 15em;
+            border-radius: 10px;
+        }
+		
+		.file-input-container:hover,
+        .file-input-container:focus {
+            border: 2px solid #4a9dec;
+            box-shadow: 0px 0px 0px 7px rgb(74, 157, 236, 20%);
+            background-color: white;
+        }
+
+        .file-input {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 2.5em;
+            padding: 0 1em;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .file-label:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* Custom color picker input */
+        .color-input-container {
+            position: relative;
+            display: inline-block;
+            width: 15em;
+        }
+
+        .color-input {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            height: 2.5em;
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 10px;
+            border: 2px solid transparent;
+            padding: 2px;
+            outline: none;
+            transition: all 0.5s;
+        }
+
+        .color-input:hover,
+        .color-input:focus {
+            border: 2px solid #4a9dec;
+            box-shadow: 0px 0px 0px 7px rgb(74, 157, 236, 20%);
+            background-color: white;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border-radius: 10px;
+            padding: 0;
+        }
+		
+		/* Footer Style */
         footer {
             text-align: center;
             margin-top: 20px;
@@ -127,15 +205,26 @@
     <br><br>
 
     <label for="darkColor">Dark Color:</label>
-    <input class="input" type="color" id="darkColor" value="#000000">
+    <div class="color-input-container">
+        <input class="color-input" type="color" id="darkColor" value="#000000">
+    </div>
     <br><br>
 
     <label for="lightColor">Light Color (Background):</label>
-    <input class="input" type="color" id="lightColor" value="#ffffff">
+    <div class="color-input-container">
+        <input class="color-input" type="color" id="lightColor" value="#ffffff">
+    </div>
     <br><br>
 
     <label for="logoFile">Upload Logo (Optional):</label>
-    <input class="input" type="file" id="logoFile" accept="image/*">
+    <div class="file-input-container">
+        <input class="file-input" type="file" id="logoFile" accept="image/*">
+        <label class="file-label" for="logoFile">Choose File</label>
+    </div>
+    <br><br>
+
+    <label for="logoPadding">Logo Padding:</label>
+    <input class="input" type="number" id="logoPadding" value="5" min="0" step="1">
     <br><br>
 
     <label for="fileFormat">Select File Format:</label>
@@ -173,9 +262,16 @@ function generateQRCode() {
     const colorDark = document.getElementById("darkColor").value;
     const colorLight = document.getElementById("lightColor").value;
     const logoFile = document.getElementById("logoFile").files[0];
+    const padding = parseInt(document.getElementById("logoPadding").value); // Get padding value
     const borderColor = colorLight;
     const fileFormat = document.getElementById("fileFormat").value; 
     const fileName = document.getElementById("fileName").value || 'qrcode'; // Get filename input, default to 'qrcode'
+
+    // Check if the text input is empty
+    if (!text.trim()) {
+        alert("Please enter some text or a URL to generate the QR code.");
+        return; // Exit the function if no text is entered
+    }
 
     const qrCodeElement = document.getElementById("qrcode");
     qrCodeElement.innerHTML = ""; // Clear previous QR code if any
@@ -236,8 +332,6 @@ function generateQRCode() {
                     logoImg.src = e.target.result;
                     logoImg.onload = function () {
                         const logoSize = size / 5;
-                        const logoPadding = 5;
-
                         const canvas = document.createElement("canvas");
                         const ctx = canvas.getContext("2d");
                         canvas.width = size;
@@ -247,7 +341,7 @@ function generateQRCode() {
 
                         const centerX = size / 2;
                         const centerY = size / 2;
-                        const radius = logoSize / 2 + logoPadding;
+                        const radius = logoSize / 2 + padding;
                         ctx.fillStyle = borderColor;
                         ctx.beginPath();
                         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
@@ -255,7 +349,7 @@ function generateQRCode() {
 
                         ctx.save();
                         ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius - logoPadding, 0, Math.PI * 2, false);
+                        ctx.arc(centerX, centerY, radius - padding, 0, Math.PI * 2, false);
                         ctx.clip();
 
                         ctx.drawImage(logoImg, centerX - logoSize / 2, centerY - logoSize / 2, logoSize, logoSize);
@@ -290,6 +384,7 @@ function generateQRCode() {
     }
 }
 </script>
+
 
 </body>
 </html>
